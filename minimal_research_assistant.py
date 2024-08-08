@@ -1,4 +1,5 @@
 import argparse
+from typing import TypeVar
 import base64
 import datetime
 import io
@@ -26,6 +27,12 @@ from anthropic import Anthropic
 from blessings import Terminal
 from PIL import Image
 from scipy.signal import butter, lfilter, resample
+
+T = TypeVar("T")
+
+def unwrap_none(x: T | None) -> T:
+    assert x is not None
+    return x
 
 term = Terminal()
 
@@ -71,7 +78,7 @@ parser.add_argument(
     help="Path to the whisper model",
     required=False,
     type=str,
-    default="/Users/chris/Programacio/whisper.cpp/models/ggml-medium.en.bin",
+    default="/Users/adria/Programacio/whisper.cpp/models/ggml-base.en.bin",
 )
 
 
@@ -365,36 +372,33 @@ def record_until_done(fs):
     return myrecording
 
 
+
 def get_text_from_audio():
     fs = 16000  # Sample rate
     myrecording = record_until_done(fs)
     wav.write(f"{args.tmp_process_dir}/my_recording.wav", fs, myrecording)
     print(term.bold_underline_yellow(f"\b\bRecording finished. Processing..."), flush=True, end="")
     process = subprocess.Popen(
-        f"{args.whisper_bin_path} -m {args.whisper_model_path} -f {args.tmp_process_dir}/my_recording.wav -otxt --prompt 'User talks about mathematics and computer science.' -t 6 ",
-        shell=True,
+        [args.whisper_bin_path, "-m", args.whisper_model_path, "-f", str(Path(args.tmp_process_dir)/"my_recording.wav"),
+        "-otxt", "--prompt", 'User talks about mathematics and computer science.', "-t", "6"],
+        shell=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        executable="/bin/zsh",
+        executable=args.whisper_bin_path,
     )
     stdout, stderr = process.communicate()
     try:
-        # You may need to edit this for different whisper.cpp files
-        tts_time = (
-            stderr.decode("utf-8")
-            .split("total time =")[1]
-            .split("ms")[0]
-            .replace("\n", " ")
-            .replace(" ", "")
-        )
-        recording_time = stderr.decode("utf-8").split("sec)")[0].split(" ")[-2]
-        speedup = float(recording_time) / (float(tts_time.replace("ms", "")) / 1000)
+        stderr_text = stderr.decode("utf-8")
+        recording_time = float(unwrap_none(re.search(r'(\d+\.?\d*)\s*sec', stderr_text)).group(1))
+        tts_time = float(unwrap_none(re.search(r'total time =\s+(\d+\.\d+)', stderr_text)).group(1))
+        speedup = recording_time / (tts_time * 1000)
     except:
         breakpoint()
-    print(term.bold_underline_yellow(f" Done in {tts_time} ({speedup:.2f}x realtime)"), flush=True)  # type: ignore
-    print("")
-    outs = re.sub("\[.*?\]", "", stdout.decode("utf-8"))  # type: ignore
-    return outs
+    print(term.bold_underline_yellow(f" Done in {tts_time:.2f} s ({speedup:.2f}x realtime)"), flush=True)
+
+    with open(Path(args.tmp_process_dir) / "my_recording.wav.txt") as f:
+        return f.read()
+
 
 
 messages = [
