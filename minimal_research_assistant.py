@@ -19,7 +19,6 @@ from pathlib import Path
 
 import fitz  # PyMuPDF # type: ignore
 import numpy as np
-import openai
 import scipy.io.wavfile as wav
 import sounddevice as sd
 import tiktoken
@@ -30,7 +29,6 @@ from scipy.signal import butter, lfilter, resample
 
 term = Terminal()
 
-openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 parser = argparse.ArgumentParser()
 
@@ -42,14 +40,14 @@ print_buffer = ""
 SELF_CODE_CANARY = "zbmTL"  # To stop the model executing commands when reading its own code
 
 
-parser.add_argument("-u", "--username", help="My name", required=False, type=str, default="Chris")
+parser.add_argument("-u", "--username", help="My name", required=False, type=str, default="Adrià")
 parser.add_argument(
     "-tmp",
     "--tmp_process_dir",
     help="Directory to put temporary files in",
     required=False,
     type=str,
-    default="/Users/Chris/tmp",
+    default="/Users/adria/research_assistant/tmp",
 )
 parser.add_argument(
     "-tmp_save_dir",
@@ -57,7 +55,7 @@ parser.add_argument(
     help="Location to save with the `save` keyword",
     required=False,
     type=str,
-    default="/Users/chris/bin/saved_convos",
+    default="/Users/adria/research_assistant/saved_convos",
 )
 parser.add_argument(
     "-whisper_bin_path",
@@ -65,7 +63,7 @@ parser.add_argument(
     help="Path to the whisper binary",
     required=False,
     type=str,
-    default="/Users/chris/bin/whisper.cpp/main",
+    default="/Users/adria/Programacio/whisper.cpp/main",
 )
 parser.add_argument(
     "-whisper_model_path",
@@ -73,7 +71,7 @@ parser.add_argument(
     help="Path to the whisper model",
     required=False,
     type=str,
-    default="/Users/chris/bin/whisper.cpp/models/ggml-medium.en.bin",
+    default="/Users/chris/Programacio/whisper.cpp/models/ggml-medium.en.bin",
 )
 
 
